@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Aloha Shopping</title>
+<meta name="description" content="하와이 쇼핑리스트 앱">
+<meta name="theme-color" content="#1a3a2a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#f4f1eb;
+  --card:#fff;
+  --text:#1a3a2a;
+  --text-sub:#6b7c72;
+  --accent:#e8734a;
+  --accent2:#f4a940;
+  --green:#2d6a4f;
+  --green-light:#d8f3dc;
+  --border:rgba(26,58,42,.08);
+  --shadow:0 2px 16px rgba(26,58,42,.08);
+  --radius:16px;
+}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Noto Sans KR',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  position:relative;
+}
+/* Background pattern */
+body::before{
+  content:'';position:fixed;top:0;left:0;right:0;bottom:0;
+  background:
+    radial-gradient(ellipse at 10% 0%,rgba(45,106,79,.06) 0%,transparent 50%),
+    radial-gradient(ellipse at 90% 100%,rgba(232,115,74,.05) 0%,transparent 50%);
+  pointer-events:none;z-index:0;
+}
+
+.app{
+  max-width:480px;margin:0 auto;height:100%;display:flex;flex-direction:column;
+  position:relative;z-index:1;
+}
+
+/* Header */
+header{
+  padding:16px 20px 12px;
+  background:linear-gradient(135deg,#1a3a2a 0%,#2d6a4f 100%);
+  color:#fff;
+  position:relative;overflow:hidden;
+  flex-shrink:0;
+}
+header::after{
+  content:'🌺';position:absolute;right:16px;top:50%;transform:translateY(-50%);
+  font-size:32px;opacity:.3;
+}
+header h1{
+  font-family:'Playfair Display',serif;
+  font-size:22px;font-weight:800;letter-spacing:-.5px;
+  line-height:1.2;
+}
+header h1 span{color:var(--accent2);font-style:italic}
+.header-sub{font-size:12px;opacity:.6;margin-top:2px;font-weight:400}
+.item-count{
+  display:inline-flex;align-items:center;gap:4px;
+  background:rgba(255,255,255,.15);backdrop-filter:blur(8px);
+  padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;
+  margin-top:6px;
+}
+.item-count .dot{width:6px;height:6px;border-radius:50%;background:var(--accent2)}
+
+/* Add button floating */
+.fab{
+  position:fixed;bottom:28px;right:calc(50% - 220px);z-index:100;
+  width:56px;height:56px;border-radius:50%;border:none;
+  background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);
+  color:#fff;font-size:28px;cursor:pointer;
+  box-shadow:0 4px 20px rgba(232,115,74,.4);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .2s,box-shadow .2s;
+  line-height:1;
+}
+@media(max-width:480px){.fab{right:24px}}
+.fab:active{transform:scale(.92)}
+.fab svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round}
+
+/* List */
+.list-area{
+  flex:1;overflow-y:auto;padding:16px 16px 100px;
+  -webkit-overflow-scrolling:touch;
+}
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:60%;text-align:center;gap:12px;
+}
+.empty-state .emoji{font-size:56px;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.empty-state p{color:var(--text-sub);font-size:14px;line-height:1.6}
+.empty-state strong{color:var(--text);font-size:15px}
+
+/* Card */
+.card{
+  background:var(--card);border-radius:var(--radius);
+  box-shadow:var(--shadow);margin-bottom:12px;
+  overflow:hidden;position:relative;
+  animation:slideUp .3s ease-out;
+  border:1px solid var(--border);
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.card.checked{opacity:.55}
+.card.checked .card-body h3{text-decoration:line-through;color:var(--text-sub)}
+.card-inner{display:flex;gap:12px;padding:14px}
+.card-img{
+  width:72px;height:72px;border-radius:12px;flex-shrink:0;
+  background:var(--green-light);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;position:relative;
+}
+.card-img img{width:100%;height:100%;object-fit:cover;border-radius:12px}
+.card-img .placeholder{font-size:28px}
+.card-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.card-body h3{font-size:15px;font-weight:600;margin-bottom:3px;word-break:break-word}
+.card-body .memo{font-size:12px;color:var(--text-sub);line-height:1.5;word-break:break-word;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-actions{
+  display:flex;align-items:center;gap:0;flex-shrink:0;align-self:center;
+}
+.card-actions button{
+  width:36px;height:36px;border:none;background:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;border-radius:10px;
+  transition:background .15s;
+}
+.card-actions button:active{background:rgba(0,0,0,.06)}
+.card-actions button svg{width:18px;height:18px}
+.check-btn svg{stroke:var(--green);fill:none;stroke-width:2}
+.check-btn.active svg{fill:var(--green);stroke:var(--green)}
+.del-btn svg{stroke:#c0392b;fill:none;stroke-width:2}
+
+/* Modal */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.45);
+  backdrop-filter:blur(4px);z-index:200;
+  display:none;align-items:flex-end;justify-content:center;
+  animation:fadeIn .2s;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-overlay.show{display:flex}
+.modal{
+  background:var(--card);border-radius:20px 20px 0 0;
+  width:100%;max-width:480px;padding:24px 20px 32px;
+  transform:translateY(0);animation:slideModal .3s ease-out;
+  max-height:90vh;overflow-y:auto;
+}
+@keyframes slideModal{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;border-radius:2px;background:#ddd;margin:0 auto 20px}
+.modal h2{font-family:'Playfair Display',serif;font-size:20px;margin-bottom:20px;text-align:center}
+
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:var(--text-sub);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.form-group input,.form-group textarea{
+  width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;
+  font-size:15px;font-family:inherit;background:var(--bg);
+  transition:border-color .2s;outline:none;color:var(--text);
+}
+.form-group input:focus,.form-group textarea:focus{border-color:var(--green)}
+.form-group textarea{resize:none;height:72px}
+
+.photo-upload{
+  width:100%;height:140px;border:2px dashed rgba(45,106,79,.25);
+  border-radius:14px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:8px;
+  cursor:pointer;background:var(--green-light);
+  transition:border-color .2s,background .2s;
+  overflow:hidden;position:relative;
+}
+.photo-upload:active{background:rgba(45,106,79,.12)}
+.photo-upload.has-img{border:none;background:transparent}
+.photo-upload img{width:100%;height:100%;object-fit:cover;border-radius:12px}
+.photo-upload .upload-text{font-size:13px;color:var(--text-sub);text-align:center}
+.photo-upload .upload-icon{font-size:28px}
+.photo-upload .remove-photo{
+  position:absolute;top:8px;right:8px;width:28px;height:28px;
+  border-radius:50%;background:rgba(0,0,0,.5);border:none;
+  color:#fff;font-size:16px;cursor:pointer;display:flex;
+  align-items:center;justify-content:center;
+}
+
+.btn-row{display:flex;gap:10px;margin-top:20px}
+.btn{
+  flex:1;padding:14px;border:none;border-radius:12px;
+  font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;
+  transition:transform .15s;
+}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,var(--green) 0%,#40916c 100%);color:#fff}
+.btn-secondary{background:var(--bg);color:var(--text)}
+
+/* Install banner */
+.install-banner{
+  display:none;padding:10px 16px;
+  background:linear-gradient(90deg,var(--green),#40916c);
+  color:#fff;font-size:12px;text-align:center;
+  cursor:pointer;flex-shrink:0;
+}
+.install-banner strong{font-weight:700}
+
+/* Confirm modal */
+.confirm-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.4);
+  z-index:300;display:none;align-items:center;justify-content:center;
+}
+.confirm-overlay.show{display:flex}
+.confirm-box{
+  background:#fff;border-radius:16px;padding:24px;width:280px;text-align:center;
+  box-shadow:0 8px 32px rgba(0,0,0,.2);
+}
+.confirm-box p{font-size:14px;margin-bottom:20px;line-height:1.5;color:var(--text)}
+.confirm-box .btn-row{margin-top:0}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="install-banner" id="installBanner" onclick="installPWA()">
+    <strong>📲 홈 화면에 추가</strong>하여 앱처럼 사용하세요
+  </div>
+
+  <header>
+    <h1>Aloha <span>Shopping</span></h1>
+    <div class="header-sub">하와이 쇼핑리스트</div>
+    <div class="item-count"><span class="dot"></span><span id="countText">0개 아이템</span></div>
+  </header>
+
+  <div class="list-area" id="listArea">
+    <div class="empty-state" id="emptyState">
+      <div class="emoji">🏝️</div>
+      <div>
+        <strong>쇼핑리스트가 비어있어요</strong>
+        <p>오른쪽 아래 + 버튼을 눌러<br>사고 싶은 아이템을 추가하세요!</p>
+      </div>
+    </div>
+  </div>
+
+  <button class="fab" onclick="openModal()" aria-label="아이템 추가">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="modalTitle">아이템 추가</h2>
+
+    <div class="form-group">
+      <label>사진</label>
+      <div class="photo-upload" id="photoUpload" onclick="triggerPhoto()">
+        <div class="upload-icon">📷</div>
+        <div class="upload-text">탭하여 사진 추가</div>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+    </div>
+
+    <div class="form-group">
+      <label>아이템 이름 *</label>
+      <input type="text" id="itemName" placeholder="예: 마카다미아 초콜릿" autocomplete="off">
+    </div>
+
+    <div class="form-group">
+      <label>메모</label>
+      <textarea id="itemMemo" placeholder="예: ABC마트에서 3+1 행사 중"></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveItem()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <p>이 아이템을 삭제할까요?</p>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="cancelDelete()">취소</button>
+      <button class="btn btn-primary" style="background:#c0392b" onclick="confirmDelete()">삭제</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// State
+let items = JSON.parse(localStorage.getItem('aloha_items') || '[]');
+let editingId = null;
+let currentPhoto = null;
+let deleteTargetId = null;
+let deferredPrompt = null;
+
+// PWA install
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').style.display = 'block';
+});
+function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      deferredPrompt = null;
+      document.getElementById('installBanner').style.display = 'none';
+    });
+  }
+}
+
+// Render
+function render() {
+  const area = document.getElementById('listArea');
+  const empty = document.getElementById('emptyState');
+  const unchecked = items.filter(i => !i.checked);
+  const checked = items.filter(i => i.checked);
+  const sorted = [...unchecked, ...checked];
+
+  document.getElementById('countText', '').textContent =
+    `${items.length}개 아이템` + (checked.length ? ` · ${checked.length}개 완료` : '');
+
+  if (items.length === 0) {
+    empty.style.display = 'flex';
+    area.querySelectorAll('.card').forEach(c => c.remove());
+    return;
+  }
+  empty.style.display = 'none';
+
+  const fragment = document.createDocumentFragment();
+  sorted.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'card' + (item.checked ? ' checked' : '');
+    card.innerHTML = `
+      <div class="card-inner">
+        <div class="card-img" onclick="openEditModal('${item.id}')">
+          ${item.photo
+            ? `<img src="${item.photo}" alt="${item.name}">`
+            : `<span class="placeholder">🛍️</span>`}
+        </div>
+        <div class="card-body" onclick="openEditModal('${item.id}')">
+          <h3>${esc(item.name)}</h3>
+          ${item.memo ? `<div class="memo">${esc(item.memo)}</div>` : ''}
+        </div>
+        <div class="card-actions">
+          <button class="check-btn ${item.checked ? 'active' : ''}" onclick="toggleCheck('${item.id}')">
+            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </button>
+          <button class="del-btn" onclick="askDelete('${item.id}')">
+            <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      </div>`;
+    fragment.appendChild(card);
+  });
+
+  // Remove old cards, keep empty state
+  area.querySelectorAll('.card').forEach(c => c.remove());
+  area.appendChild(fragment);
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function save() {
+  localStorage.setItem('aloha_items', JSON.stringify(items));
+  render();
+}
+
+// Modal
+function openModal() {
+  editingId = null;
+  currentPhoto = null;
+  document.getElementById('modalTitle').textContent = '아이템 추가';
+  document.getElementById('itemName').value = '';
+  document.getElementById('itemMemo').value = '';
+  resetPhotoUI();
+  document.getElementById('modalOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('itemName').focus(), 300);
+}
+
+function openEditModal(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  editingId = id;
+  currentPhoto = item.photo || null;
+  document.getElementById('modalTitle').textContent = '아이템 수정';
+  document.getElementById('itemName').value = item.name;
+  document.getElementById('itemMemo').value = item.memo || '';
+  if (currentPhoto) {
+    showPhotoPreview(currentPhoto);
+  } else {
+    resetPhotoUI();
+  }
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+function closeModalOutside(e) {
+  if (e.target === e.currentTarget) closeModal();
+}
+
+function saveItem() {
+  const name = document.getElementById('itemName').value.trim();
+  if (!name) {
+    document.getElementById('itemName').style.borderColor = '#e8734a';
+    document.getElementById('itemName').focus();
+    setTimeout(() => document.getElementById('itemName').style.borderColor = '', 1500);
+    return;
+  }
+  if (editingId) {
+    const item = items.find(i => i.id === editingId);
+    if (item) {
+      item.name = name;
+      item.memo = document.getElementById('itemMemo').value.trim();
+      if (currentPhoto !== undefined) item.photo = currentPhoto;
+    }
+  } else {
+    items.unshift({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      name,
+      memo: document.getElementById('itemMemo').value.trim(),
+      photo: currentPhoto,
+      checked: false,
+      createdAt: Date.now()
+    });
+  }
+  save();
+  closeModal();
+}
+
+// Photo
+function triggerPhoto() {
+  if (currentPhoto) return; // handled by remove btn
+  document.getElementById('photoInput').click();
+}
+function handlePhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    // Compress
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const max = 400;
+      let w = img.width, h = img.height;
+      if (w > h) { if (w > max) { h = h * max / w; w = max; } }
+      else { if (h > max) { w = w * max / h; h = max; } }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      currentPhoto = canvas.toDataURL('image/jpeg', 0.7);
+      showPhotoPreview(currentPhoto);
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+function showPhotoPreview(src) {
+  const el = document.getElementById('photoUpload');
+  el.classList.add('has-img');
+  el.innerHTML = `<img src="${src}" alt="preview"><button class="remove-photo" onclick="event.stopPropagation();removePhoto()">✕</button>`;
+}
+function removePhoto() {
+  currentPhoto = null;
+  resetPhotoUI();
+}
+function resetPhotoUI() {
+  const el = document.getElementById('photoUpload');
+  el.classList.remove('has-img');
+  el.innerHTML = `<div class="upload-icon">📷</div><div class="upload-text">탭하여 사진 추가</div>`;
+}
+
+// Check / Delete
+function toggleCheck(id) {
+  const item = items.find(i => i.id === id);
+  if (item) { item.checked = !item.checked; save(); }
+}
+function askDelete(id) {
+  deleteTargetId = id;
+  document.getElementById('confirmOverlay').classList.add('show');
+}
+function cancelDelete() {
+  deleteTargetId = null;
+  document.getElementById('confirmOverlay').classList.remove('show');
+}
+function confirmDelete() {
+  items = items.filter(i => i.id !== deleteTargetId);
+  save();
+  cancelDelete();
+}
+
+// Init
+render();
+
+// Register SW
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
